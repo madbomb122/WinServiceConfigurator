@@ -7,7 +7,7 @@ $MySite = 'https://GitHub.com/madbomb122/WinServiceConfigurator'
 #
 $Script_Version = '0.9.0'
 $Script_Date = 'Apr-15-2022'
-#$Release_Type = 'Stable'
+$Release_Type = 'Stable'
 ##########
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
