@@ -9,8 +9,7 @@ This script allows you to change service configuration, Manually or from a file.
 To Download go to -> [Win Service Configurator Script -Release](https://github.com/madbomb122/WinServiceConfigurator/releases)  
 
 **Current Version**   
-**Script:** `6.2.3` (June 22, 2020)   
-**Service:** `5.0` (Febuary 25, 2019) -April 2018 Update   
+**Script:** `0.9.0` (APril 15, 2022)   
 
 
 ## Contents
