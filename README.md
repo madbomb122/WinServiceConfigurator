@@ -155,7 +155,7 @@ Switch Examples:
 ---To add put it in the proper format
 ---Indead of removeing it i suggesst adding a - (minus sign) to the number in the service
 **Note 1:** Number meaning `0 -Not Installed/Skip`, `1 -Disable`, `2 -Manual`, `3 -Automatic`, `4 -Auto (Delayed)`   
-**Note 2:** Negative Numbers are the same as above but wont be used unless you select it or use the `All` Setting   
+**Note 2:** Negative Numbers are the same as above but wont be used unless you select it in the GUI   
 
 **Q:** How long are you going to maintain the script?   
 **A:** No Clue.   
