@@ -118,6 +118,9 @@ Switch Examples:
 **Q:** Can I use a Backup File(s) on another computer?   
 **A:** You can use/load them on another computer, but be careful.   
 
+**Q:** Can I use the file created from your BlackViper Script?   
+**A:** Yes you can use the file from the script, just not the `blackviper.csv` file.   
+
 **Q:** The script wont run, can you help me?   
 **A:** Yes, but first if you are using automation.. turn off automation and see if it gives and error that you can correct.   
 
