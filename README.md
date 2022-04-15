@@ -3,7 +3,7 @@ This script allows you to change service configuration, Manually or from a file.
 
 [![Donate](https://img.shields.io/badge/Donate-Amazon-yellowgreen.svg?style=plastic)](https://www.amazon.com/gp/registry/wishlist/YBAYWBJES5DE/)
 [![GitHub Release](https://img.shields.io/github/release/madbomb122/WinServiceConfigurator.svg?style=plastic)](https://github.com/madbomb122/WinServiceConfigurator/releases)
-[![GitHub Release Date](https://img.shields.io/github/release-date/madbomb122/WinServiceConfigurator.svg?style=plastic)](https://github.com/madbomb122/BWinServiceConfigurator/releases)
+[![GitHub Release Date](https://img.shields.io/github/release-date/madbomb122/WinServiceConfigurator.svg?style=plastic)](https://github.com/madbomb122/WinServiceConfigurator/releases)
 [![GitHub Issues](https://img.shields.io/github/issues/madbomb122/WinServiceConfigurator.svg?style=plastic)](https://github.com/madbomb122/WinServiceConfigurator/issues)
 # 
 To Download go to -> [Win Service Configurator Script -Release](https://github.com/madbomb122/WinServiceConfigurator/releases)  
