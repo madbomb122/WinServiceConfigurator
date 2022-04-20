@@ -5,8 +5,8 @@
 #  Author: Madbomb122
 $MySite = 'https://GitHub.com/madbomb122/WinServiceConfigurator'
 #
-$Script_Version = '0.9.0'
-$Script_Date = 'Apr-15-2022'
+$Script_Version = '0.9.1'
+$Script_Date = 'Apr-20-2022'
 #$Release_Type = 'Stable'
 ##########
 
@@ -23,7 +23,7 @@ $Script_Date = 'Apr-15-2022'
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 <#------------------------------------------------------------------------------#>
-$Copyright = ' The MIT License (MIT) + an added Condition                             
+$Copyright = 'The MIT License (MIT) + an added Condition (Keep Donate Link)           
                                                                         
  Copyright (c) 2022 Madbomb122                                          
           - Windows Service Configurator Script                         
@@ -174,7 +174,6 @@ $Donate_Url = 'https://www.amazon.com/gp/registry/wishlist/YBAYWBJES5DE/'
 
 $ServiceEnd = (Get-Service *_*).Where({$_.ServiceType -eq 224}, 'First') -Replace '^.+?_', '_'
 
-
 $colors = @(
 'black',      #0
 'blue',       #1
@@ -258,14 +257,14 @@ Function CloseExit{ If($GuiSwitch){ $Form.Close() } ;Exit }
 Function ShowInvalid([Bool]$InvalidA){ If($InvalidA){ Write-Host "`nInvalid Input" -ForegroundColor Red -BackgroundColor Black -NoNewline } Return $False }
 Function DownloadFile([String]$Url,[String]$FilePath){ (New-Object System.Net.WebClient).DownloadFile($Url, $FilePath) }
 Function QMarkServices([String]$Srv){ If($Srv -Match '_\?+$'){ Return ($Srv -Replace '_\?+$',$ServiceEnd) } Return $Srv }
-Function SearchSrv([String]$Srv,[String]$Fil){ Return ($CurrServices.Where({$_.Name -eq $Srv}, 'First')).$Fil }
+Function SearchSrv([String]$Srv,[String]$Fil){ Return ($CurrServices.Where({$_.ServiceName -eq $Srv},'First')).$Fil }
 Function AutoDelayTest([String]$Srv){ $tmp = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\$Srv\").DelayedAutostart ;If($Null -ne $tmp){ Return $tmp } Return 0 }
 Function AutoDelaySet([String]$Srv,[Int]$EnDi){ Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\$Srv\" -Name 'DelayedAutostart' -Type DWord -Value $EnDi }
 
 Function GetCurrServices{
 	$Script:CurrServices = Get-CimInstance Win32_service | Foreach-Object{
 		[PSCustomObject]@{
-			Name = $_.Name
+			ServiceName = $_.Name
 			Status = $_.State
 			StartType = $_.StartMode
 			DisplayName = $_.DisplayName
@@ -428,12 +427,8 @@ Function UpdateSetting {
 Function SaveSetting {
 	UpdateSetting
 
-	$Service_Select = $WPF_ServiceConfig.SelectedIndex
-	If(($Service_Select+1) -eq $SFCount){ $Service_Select = 0 }
-
 	$Settings = @{
 		AcceptToS = $AcceptToS
-		Service_Select = $Service_Select
 		BackupServiceConfig = $BackupServiceConfig
 		InternetCheck = $InternetCheck
 		ScriptVerCheck = $ScriptVerCheck
@@ -442,6 +437,7 @@ Function SaveSetting {
 		StopDisabled = $StopDisabled
 		ChangeState = $ChangeState
 		ShowSkipped = $ShowSkipped
+		ShowAllServices = $ShowAllServices
 	}
 	If($ConsideredDonation -eq 'Yes'){ $Settings.ConsideredDonation = 'Yes' }
 	If($WPF_DevLogCB.IsChecked) {
@@ -583,6 +579,7 @@ Function GuiStart {
 									<ComboBox Grid.Column="1" VerticalAlignment="Center" Name="ServiceConfig" Margin="5"/>
 									<TextBlock Name="CustomNote" Grid.Column="2" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5">Configure Below</TextBlock>
 								</Grid>
+								<TextBlock Grid.Column="1" Grid.Row="0" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="5">Make sure to look at script options for settings.</TextBlock>
 							</Grid>
 						</GroupBox>
 						<GroupBox Name="CustomNoteGrid" FontWeight="Bold" Header="Custom Configuration" Grid.Row="1">
@@ -616,7 +613,7 @@ Function GuiStart {
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
-									<RowDefinition Height="10"/>
+									<RowDefinition Height=".2*"/>
 								</Grid.RowDefinitions>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="10"/>
@@ -634,7 +631,8 @@ Function GuiStart {
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
-									<RowDefinition Height="10"/>
+									<RowDefinition Height="*"/>
+									<RowDefinition Height=".2*"/>
 								</Grid.RowDefinitions>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="10"/>
@@ -644,6 +642,7 @@ Function GuiStart {
 								<CheckBox Grid.Row="2" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="XboxService_CB" Content="Skip All Xbox Services"/>
 								<CheckBox Grid.Row="3" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="ChangeState_CB" Content="Allow Change of Service State"/>
 								<CheckBox Grid.Row="4" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="StopDisabled_CB" Content="Stop Disabled Services"/>
+								<CheckBox Grid.Row="5" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="ShowAllServices_CB" Content="Show All Services"/>
 							</Grid>
 						</Grid>
 						<Grid Grid.Column="1">
@@ -659,7 +658,7 @@ Function GuiStart {
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
-									<RowDefinition Height=".3*"/>
+									<RowDefinition Height=".2*"/>
 								</Grid.RowDefinitions>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="10"/>
@@ -679,15 +678,16 @@ Function GuiStart {
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
 									<RowDefinition Height="*"/>
+									<RowDefinition Height=".2*"/>
 								</Grid.RowDefinitions>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="10"/>
-									<ColumnDefinition Width="2*"/>
+									<ColumnDefinition Width="*"/>
 									<ColumnDefinition Width="10*"/>
 								</Grid.ColumnDefinitions>
 								<CheckBox Grid.Row="1" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="LogBeforeAfter_CB" Content="Log Services Before &amp; After" Grid.ColumnSpan="2"/>
 								<CheckBox Grid.Row="2" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="ScriptLog_CB" Content="Script Log" Grid.ColumnSpan="2"/>
-								<TextBox Grid.Row="3" Grid.Column="2" Margin="5,0,13,0" VerticalAlignment="Center" Name="LogNameInput" TextAlignment="Left" Text="$FullPath\Script.log"/>
+								<TextBox Grid.Row="3" Grid.Column="2" Margin="5" VerticalAlignment="Center" Name="LogNameInput" TextAlignment="Left" Text="$FullPath\Script.log"/>
 								<CheckBox Grid.Row="4" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="BackupServiceConfig_CB" Content="Backup Current Service" Grid.ColumnSpan="2"/>
 							</Grid>
 						</Grid>
@@ -710,9 +710,6 @@ Function GuiStart {
 								<Button Grid.Row="1" Grid.Column="1" Margin="5" Name="UpdateScriptButton" Content="Check Service Utility Script"/>
 								<CheckBox Grid.Row="2" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="ScriptVerCheck_CB" Content="Auto Script Update"/>
 								<CheckBox Grid.Row="3" Grid.Column="1" Margin="5" HorizontalAlignment="Left" VerticalAlignment="Center" Name="InternetCheck_CB" Content="Skip Internet Check"/>
-								<TextBlock Grid.Row="4" Grid.Column="1" Margin="5" HorizontalAlignment="Center" VerticalAlignment="Top" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold">
-									<Run Text="Will run and use current settings whether disabled or enabled...."/>
-								</TextBlock>
 							</Grid>
 						</Grid>
 					</Grid>
@@ -803,7 +800,7 @@ Function GuiStart {
 										</DataTemplate>
 									</DataGridTemplateColumn.CellTemplate>
 								</DataGridTemplateColumn>
-								<DataGridTextColumn Header="Common Name" Width="121" Binding="{Binding CName}" CanUserSort="True" IsReadOnly="True"/>
+								<DataGridTextColumn Header="Common Name" Width="120" Binding="{Binding CName}" CanUserSort="True" IsReadOnly="True"/>
 								<DataGridTextColumn Header="Service Name" Width="120" Binding="{Binding ServiceName}" IsReadOnly="True"/>
 								<DataGridTextColumn Header="Current Setting" Width="95" Binding="{Binding CurrType}" IsReadOnly="True"/>
 								<DataGridTemplateColumn Header="Loaded File" Width="105" SortMemberPath="FileType" CanUserSort="True">
@@ -866,7 +863,6 @@ Function GuiStart {
 		LogEnd
 		ShowConsoleWin 5
 	}
-
 	$WPF_RunScriptButton.Add_Click{ RunScriptFun }
 
 	$WPF_ACUcheckboxChecked.Add_Click{
@@ -887,8 +883,7 @@ Function GuiStart {
 	}
 
 	$WPF_DevLogCB.Add_Click{
-		$tmp = $WPF_DevLogCB.IsChecked
-		If(!$tmp) {
+		If(!$WPF_DevLogCB.IsChecked) {
 			$Script:ScriptLog = $Script_Log
 			$Script:LogName = $Log_Name
 			$Script:Diagnostic = $Diagn_ostic
@@ -914,9 +909,7 @@ Function GuiStart {
 		$DevLogList.ForEach{
 			$TmpWPF = Get-Variable -Name $_ -ValueOnly
 			$TmpWPF.IsChecked = If((Get-Variable -Name ($_.Split('_')[1]) -ValueOnly) -eq 0){ $False } Else{ $True }
-			$TmpWPF.IsEnabled = !$tmp
 		}
-		$WPF_LogNameInput.IsEnabled = If($ScriptLog -eq 0 -or $tmp){ $False } Else{ $True }
 		$WPF_LogNameInput.Text = $LogName
 	}
 
@@ -956,6 +949,7 @@ Function GuiStart {
 	$WPF_FilterType.Add_DropDownClosed{ DGFilter }
 	$WPF_LoadServicesButton.Add_Click{ GenerateServices }
 	$WPF_UpdateScriptButton.Add_Click{ UpdateCheckNow }
+	$WPF_ShowAllServices_CB.Add_Click{ $ShowAllServices = If($WPF_ShowAllServices_CB.IsChecked){ 1 } Else{ 0 } ;GenerateServices }
 
 	$WPF_ShowDiagButton.Add_Click{
 		UpdateSetting
@@ -1026,7 +1020,6 @@ Function GuiStart {
 
 	$WPF_ShowConsole_CB.Add_Checked{ ShowConsoleWin 5 } #5 = Show
 	$WPF_ShowConsole_CB.Add_UnChecked{ ShowConsoleWin 0 } #0 = Hide
-	$WPF_ScriptLog_CB.Add_Click{ $WPF_LogNameInput.IsEnabled = $WPF_ScriptLog_CB.IsChecked }
 	$WPF_btnOpenFile.Add_Click{ OpenSaveDiaglog 0 }
 	$WPF_SaveCustomSrvButton.Add_Click{ OpenSaveDiaglog 1 }
 	$WPF_ContactButton.Add_Click{ Start-Process 'mailto:madbomb122@gmail.com' }
@@ -1039,11 +1032,9 @@ Function GuiStart {
 	$WPF_AboutButton.Add_Click{ [Windows.Forms.Messagebox]::Show("This script allows you to change service configuration. You can Save your current service state, Load one.`n`nThis script was created by MadBomb122.",'About', 'OK') | Out-Null }
 	$Script:RunScript = 0
 
-	$WPF_LogNameInput.Text = $LogName
-	If($ScriptLog -eq 1){ $WPF_ScriptLog_CB.IsChecked = $True ;$WPF_LogNameInput.IsEnabled = $True }
-
 	$VarList.ForEach{ $_.Value.IsChecked = If($(Get-Variable -Name ($_.Name.Split('_')[1]) -ValueOnly) -eq 1){ $True } Else{ $False } }
 
+	$WPF_LogNameInput.Text = $LogName
 	$WPF_LoadFileTxtBox.Text = $ServiceConfigFile
 
 	If($Release_Type -ne 'Stable') {
@@ -1151,41 +1142,43 @@ Function GenerateServices {
 		$Script:LoadServiceConfig = 1
 		$ServiceFilePath = $WPF_LoadFileTxtBox.Text
 	} Else {
-		$Script:LoadServiceConfig = 0
+		$Script:LoadServiceConfig = 2
 		$ServiceFilePath = $ListofServicesFiles[$SelectedIndex].FullPath
 	}
 
 	$Script:XboxService = If($WPF_XboxService_CB.IsChecked){ 1 } Else{ 0 }
-	If($ServiceImport -eq 1) {
+	If($ServiceImport -eq 1 -and (Test-Path -LiteralPath $ServiceFilePath -PathType Leaf)) {
 		[System.Collections.ArrayList] $Script:ServCB = Import-Csv -LiteralPath $ServiceFilePath
 		$Script:ServiceImport = 0
 	}
 
-	$Script:DataGridListCust = $ServCB.ForEach{
+	$Script:DataGridListCust = $CurrServices.ForEach{
 		$ServiceName = QMarkServices $_.ServiceName
-		If($CurrServices.Name -Contains $ServiceName) {
-			$tmp = ForEach($srv in $CurrServices){ If($srv.Name -eq $ServiceName){ $srv ;Break } }
-			$ServiceCommName = $tmp.DisplayName
-			$ServiceCurrType = $tmp.StartType
-			$SrState = $tmp.Status
-			$SrvDescription = $tmp.Description
-			$SrvPath = $tmp.PathName
-			[Int]$ServiceTypeNum = $_.StartType
+		$ServiceCurrType = $_.StartType
 
-			[Int]$tmpSr = $ServicesTypeFull.IndexOf($ServiceCurrType)
-			If($tmpSr -eq 3 -and $tmp.AutoDelay -ge 1){ [Int]$tmpSr = 4 }
-			$ServiceCurrType = $ServicesTypeFull[$tmpSr]
-
+		If($ServCB.ServiceName -Contains $ServiceName) {
+			ForEach($srv in $ServCB){ If($srv.ServiceName -eq $ServiceName){ [Int]$ServiceTypeNum = $srv.StartType ;Break } }
 			$checkbox = $True
+			$InFile = $True
+		} Else {
+			[Int]$ServiceTypeNum = 0
+			$checkbox = $False
+			$InFile = $False
+		}
+		If($ShowAllServices -eq 1 -or $InFile) {
+			[Int]$ServiceCurrTypeNum = $ServicesTypeFull.IndexOf($ServiceCurrType)
+			If($ServiceCurrTypeNum -eq 3 -and $_.AutoDelay -ge 1){ [Int]$ServiceCurrTypeNum = 4 }
 			If($ServiceTypeNum -In -4..0) {
 				$checkbox = $False
 				$ServiceTypeNum *= -1
 			}
-			If($XboxService -eq 1 -and $XboxServiceArr -Contains $ServiceName){ $checkbox = $False }
+			$ServiceCurrType = $ServicesTypeFull[$ServiceCurrTypeNum]
 			$ServiceType = $ServicesTypeFull[$ServiceTypeNum]
+
+			If($XboxService -eq 1 -and $XboxServiceArr -Contains $ServiceName){ $checkbox = $False }
 			$Match = If($ServiceType -eq $ServiceCurrType){ $True } Else{ $False }
 			$RowColor = RowColorRet $Match $checkbox
-			[PSCustomObject] @{ CheckboxChecked = $checkbox ;CName = $ServiceCommName ;ServiceName = $ServiceName ;CurrType = $ServiceCurrType ;FileType = $ServiceType ;ServiceTypeListDG = $ServicesTypeFull ;SrvStateListDG = $SrvStateList ;SrvState = $SrState ;SrvDesc = $SrvDescription ;SrvPath = $SrvPath ;Matches = $Match ;RowColor = $RowColor }
+			[PSCustomObject] @{ CheckboxChecked = $checkbox ;CName = $_.DisplayName ;ServiceName = $ServiceName ;CurrType = $ServiceCurrType ;FileType = $ServiceType ;ServiceTypeListDG = $ServicesTypeFull ;SrvStateListDG = $SrvStateList ;SrvState = $_.Status ;SrvDesc = $_.Description ;SrvPath = $_.PathName ;Matches = $Match ;RowColor = $RowColor ;InFile = $InFile }
 		}
 	}
 
@@ -1268,7 +1261,7 @@ Function UpdateCheck {
 		If($WebScriptVer -gt $Script_Version) {
 			$Choice = 6
 			If($NAuto){
-				$a = new-object -comobject wscript.shell
+				$a = New-Object -comobject wscript.shell
 				$Choice = $a.popup("Update Script File from $Script_Version to $WebScriptVer ?",20,'Update Found',4)
 			}
 			If($Choice -eq 6) {
@@ -1295,7 +1288,9 @@ Function ScriptUpdateFun([String]$RT) {
 		If($LoadServiceConfig -eq 1) {
 			$UpArg += "-lcsc $ServiceConfigFile "
 		} ElseIf($LoadServiceConfig -eq 2) {
-			$TempSrv = $Env:Temp + '\TempSrv.csv' ;$Script:csv | Export-Csv -LiteralPath $TempSrv -Force -Delimiter ',' ;$UpArg += "-lcsc $TempSrv "
+			$TempSrv = $Env:Temp + '\TempSrv.csv'
+			$Script:csv | Export-Csv -LiteralPath $TempSrv -Force -Delimiter ','
+			$UpArg += "-lcsc $TempSrv "
 		}
 	}
 	$ArgList.ForEach{
@@ -1357,23 +1352,19 @@ Function Save_Service([String]$SavePath) {
 		}
 	} Else {
 		$SavePath = $FileBase + $Env:computername + '-Service-Backup.csv'
-		$SaveService = GenerateSaveService
+		$SaveService = $AllService.ForEach{
+			$ServiceName = $_.Name
+			If($Skip_Services -NotContains $ServiceName) {
+				$tmp = $_.StartType
+				[Int]$StartType = $ServicesTypeFull.IndexOf($tmp)
+				If($StartType -eq 3 -and $_.AutoDelay -ge 1){ [Int]$StartType = 4 }
+				If($ServiceName -Like "*$ServiceEnd"){ $ServiceName = $ServiceName -Replace '_.+','_?????' }
+				[PSCustomObject] @{ ServiceName = $ServiceName ;StartType = $StartType ;Status = $_.Status }
+			}
+		}
 	}
 	$SaveService | Export-Csv -LiteralPath $SavePath -Encoding Unicode -Force -Delimiter ','
 	If($SavePath){ [Windows.Forms.Messagebox]::Show("File saved as '$SavePath'",'File Saved', 'OK') | Out-Null }
-}
-
-Function GenerateSaveService {
-	Return $AllService.ForEach{
-		$ServiceName = $_.Name
-		If($Skip_Services -NotContains $ServiceName) {
-			$tmp = $_.StartType
-			[Int]$StartType = $ServicesTypeFull.IndexOf($tmp)
-			If($StartType -eq 3 -and $_.AutoDelay -ge 1){ [Int]$StartType = 4 }
-			If($ServiceName -Like "*$ServiceEnd"){ $ServiceName = $ServiceName -Replace '_.+','_?????' }
-			[PSCustomObject] @{ ServiceName = $ServiceName ;StartType = $StartType ;Status = $_.Status }
-		}
-	}
 }
 
 Function DevLogSet {
@@ -1655,14 +1646,14 @@ Function ServiceSet{
 }
 
 Function ServiceCheck([String]$S_Name,[String]$S_Type) {
-	If($CurrServices.Name -Contains $S_Name) {
+	If($CurrServices.ServiceName -Contains $S_Name) {
 		If($Skip_Services -Contains $S_Name){ Return 'Denied' }
 		If($XboxService -eq 1 -and $XboxServiceArr -Contains $S_Name){ Return 'Xbox' }
 		$C_Type = SearchSrv $S_Name 'StartType'
 		If($S_Type -ne $C_Type) {
 			If($S_Name -eq 'lfsvc' -And $C_Type -eq 'disabled' -And (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\TriggerInfo\3')) {
 				Remove-Item -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\TriggerInfo\3' -Recurse -Force
-			} ElseIf($S_Name -eq 'NetTcpPortSharing' -And $NetTCP -Contains $CurrServices.Name) {
+			} ElseIf($S_Name -eq 'NetTcpPortSharing' -And $NetTCP -Contains $CurrServices.ServiceName) {
 				Return 'Manual'
 			}
 			Return $C_Type
@@ -1793,7 +1784,7 @@ Function StartScript {
 
 	If($PassedArg.Length -gt 0){ GetArgs }
 	GetCurrServices
-	$Script:AllService = $CurrServices | Select-Object Name, StartType, Status
+	$Script:AllService = $CurrServices | Select-Object ServiceName, StartType, Status
 
 	[System.Collections.ArrayList]$Skip_Services = @(
 	"BcastDVRUserService$ServiceEnd",
@@ -1903,6 +1894,10 @@ $ChangeState = 0
 # 0 = Dont Change State of service to specified/loaded
 # 1 = Change State of service to specified/loaded
 
+$ShowAllServices = 0
+# 0 = Dont show services NOT in File
+# 1 = Show all services
+
 #----- Log/Backup Items -----
 $ScriptLog = 0
 # 0 = Don't make a log file
@@ -1915,11 +1910,12 @@ $LogName = "Script.log"
 $LogBeforeAfter = 0
 # 0 = Don't make a file of all the services before and after the script
 # 1 = Make a file of all the services before and after the script
-# Will be script's directory named '(ComputerName)-Services-Before.log' and '(ComputerName)-Services-Services-After.log'
+# Will be in script's directory file named
+#    '(ComputerName)-Services-Before.log' and '(ComputerName)-Services-Services-After.log'
 
 $BackupServiceConfig = 0
 # 0 = Don't backup Your Current Service Configuration before services are changes
-# 1 = Backup Your Current Service Configuration before services are changes (Configure type below)
+# 1 = Backup Your Current Service Configuration before services are changes
 
 #--- Update Related Items ---
 $ScriptVerCheck = 0
