@@ -84,10 +84,6 @@ Use one of the following Methods you can
 
 Switch Examples:   
 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.ps1 -lcsc MyComp-Service-Backup.csv`   
-`powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.ps1 -default`   
-`powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.ps1 -auto -use -tweaked -secp`   
-`_WinServiceConfigurator.bat -default`   
-`_WinServiceConfigurator.bat -auto -use -tweaked -secp`
 
 ******
 
