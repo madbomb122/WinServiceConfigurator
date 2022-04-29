@@ -5,8 +5,8 @@
 #  Author: Madbomb122
 $MySite = 'https://GitHub.com/madbomb122/WinServiceConfigurator'
 #
-$Script_Version = '0.9.1'
-$Script_Date = 'Apr-20-2022'
+$Script_Version = '1.0.0'
+$Script_Date = 'Apr-29-2022'
 #$Release_Type = 'Stable'
 ##########
 
@@ -23,7 +23,7 @@ $Script_Date = 'Apr-20-2022'
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 <#------------------------------------------------------------------------------#>
-$Copyright = 'The MIT License (MIT) + an added Condition (Keep Donate Link)           
+$Copyright = 'The MIT License (MIT) + an added Condition (Keep Donate Links)          
                                                                         
  Copyright (c) 2022 Madbomb122                                          
           - Windows Service Configurator Script                         
@@ -85,6 +85,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.p
 
 --Service Choice Switches--
   -sxb             Skips changes to all XBox Services
+  -css             Change State of Service
+  -sds             Stop Disabled Service
 
 --Update Switches--
   -usc             Checks for Update to Script file before running
@@ -105,8 +107,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.p
 
 --Misc Switches--
   -dry             Runs the Script and Shows what services will be changed
-  -css             Change State of Service
-  -sds             Stop Disabled Service
 
 --Dev Switches--
   -devl            Makes a log file with various Diagnostic information, Nothing is Changed
@@ -388,7 +388,7 @@ Function ScanForServiceFiles {
 	$Script:ListofServicesFilesFull = @(Get-ChildItem -Path "$ScanDir\*.csv" | Select-Object -ExpandProperty FullName)
 	[System.Collections.ArrayList]$Script:ListofServicesFiles = @()
 	[Void] $ListofServicesFiles.Add([PSCustomObject] @{Name = '--Select Option Here--'; FullPath = 'None'})
-	Foreach($File in $ListofServicesFilesFull){ [Void] $ListofServicesFiles.Add([PSCustomObject] @{ Name = $(Split-Path $File -Leaf); FullPath = $File}) }
+	Foreach($File in $ListofServicesFilesFull){ [Void] $ListofServicesFiles.Add([PSCustomObject] @{ Name = [System.IO.Path]::GetFileNameWithoutExtension($File); FullPath = $File}) }
 	[Void] $ListofServicesFiles.Add([PSCustomObject] @{ Name = '--Browse for File--'; FullPath = 'None'})
 }
 
@@ -1111,27 +1111,29 @@ Function RunDisableCheck {
 	$SelectedIndex = $WPF_ServiceConfig.SelectedIndex
 
 	$WPF_RunScriptButton.Content = If(($SelectedIndex+1) -eq $SFCount) {
-		$WPF_RunScriptButton, $WPF_LoadServicesButton | Where-Object { $_.IsEnabled = $False }
 		If(!$ServiceConfigFile -or !(Test-Path -LiteralPath $ServiceConfigFile -PathType Leaf)) {
 			'Run Disabled, No Custom Service List File Selected or Does not exist.'
+			$State = $False
 		} Else {
 			[System.Collections.ArrayList]$Tempcheck = Import-Csv -LiteralPath $ServiceConfigFile
 			If($Null -In $Tempcheck[0].StartType) {
 				'Run Disabled, Invalid Service File.'
+				$State = $False
 			} Else {
-				$WPF_RunScriptButton, $WPF_LoadServicesButton | Where-Object { $_.IsEnabled = $True }
-				'Run Script with Custom Service File'
+				"Run Script with Custom Service File `"$([System.IO.Path]::GetFileNameWithoutExtension($ServiceConfigFile))`""
+				$State = $True
 			}
-			$WPF_TabControl.Items[2].Visibility = 'Visible'
 		}
 	} ElseIf($WPF_ServiceConfig.SelectedIndex -In 1..($SFCount-1)) {
 		"Run Script with `"$($ListofServicesFiles[$SelectedIndex].Name)`""
-		$WPF_TabControl.Items[2].Visibility = 'Visible'
-		$WPF_RunScriptButton, $WPF_LoadServicesButton | Where-Object { $_.IsEnabled = $True }
+		$State = $True
 	} Else {
 		'Run Disabled, No Service Configuration selected.'
-		$WPF_RunScriptButton, $WPF_LoadServicesButton | Where-Object { $_.IsEnabled = $False }
+		$State = $False
 	}
+
+	$WPF_TabControl.Items[2].Visibility = If($State){ 'Visible' } Else{ 'Hidden' }
+	$WPF_RunScriptButton, $WPF_LoadServicesButton | Where-Object { $_.IsEnabled = $State }
 }
 
 Function GenerateServices {
@@ -1484,7 +1486,6 @@ Function ServiceSet{
 		$DispTempT = @()
 		$DispTempC = @()
 		[Int] $ServiceTypeNum = $_.StartType
-		#If($ServiceTypeNum -In -4..-1 -and $SFNeg){ $ServiceTypeNum *= -1 }
 		$ServiceType = $ServicesTypeList[$ServiceTypeNum]
 		$ServiceName = QMarkServices $_.ServiceName
 		$ServiceCommName = SearchSrv $ServiceName 'DisplayName'
@@ -1558,8 +1559,9 @@ Function ServiceSet{
 				$ServiceTypeNum = 9
 			}
 			If($DryRun -ne 1 -And $Null -ne $ServiceName -And ($ChangeState -eq 1 -or ($StopDisabled -eq 1 -And $ServiceTypeNum -eq 1))) {
+				$CurState = SearchSrv $ServiceName 'Status'
 				If($State -eq 'Stopped') {
-					If((SearchSrv $ServiceName 'Status') -eq 'Running') {
+					If($CurState -eq 'Running') {
 						Try {
 							Stop-Service $ServiceName -ErrorAction Stop
 							$DispTempT += ' -Stopping Service'
@@ -1576,7 +1578,7 @@ Function ServiceSet{
 						$DispTempC += 11
 					}
 				} ElseIf($State -eq 'Running' -And $ChangeState -eq 1) {
-					If((SearchSrv $ServiceName 'Status') -eq 'Stopped') {
+					If($CurState -eq 'Stopped') {
 						Try {
 							Start-Service $ServiceName -ErrorAction Stop
 							$DispTempT += ' -Starting Service'
@@ -1619,10 +1621,7 @@ Function ServiceSet{
 	DisplayOut ' Skipped: ',$SRVSkipped -C 14,15 -L -G:$GuiSwitch
 	If($ShowNonInstalled -eq 1){ DisplayOut ' Not Installed: ',$SRVNotInstalled -C 14,15 -L -G:$GuiSwitch }
 	If($SRVError -ge 1){ DisplayOut '  Errors: ',$SRVError -C 14,15 -L -G:$GuiSwitch }
-
-	If($BackupServiceConfig -eq 1) {
-		DisplayOut ' Backup of Services Saved as CSV file in script directory.' -C 14 -L -G:$GuiSwitch
-	}
+	If($BackupServiceConfig -eq 1){ DisplayOut ' Backup of Services Saved as CSV file in script directory.' -C 14 -L -G:$GuiSwitch }
 	If($DryRun -ne 1) {
 		DisplayOut "`nThanks for using my script." -C 11
 		DisplayOut 'If you like this script please consider giving me a donation,' -C 11
@@ -1746,6 +1745,8 @@ Function ShowHelp {
 	DisplayOut '  -lcsc ','File.csv ','  Loads Custom Service Configuration, ','File.csv',' = Name of your backup/custom file' -C 14,11,15,11,15
 	DisplayOut "`n--Service Choice Switches--" -C 2
 	DisplayOut '  -sxb     ','        Skips changes to all XBox Services' -C 14,15
+	DisplayOut '  -css     ','        Change State of Service' -C 14,15
+	DisplayOut '  -sds     ','        Stop Disabled Service' -C 14,15
 	DisplayOut "`n--Update Switches--" -C 2
 	DisplayOut '  -usc     ','        Checks for Update to Script file before running' -C 14,15
 	DisplayOut '  -sic     ',"        Skips Internet Check, if you can't ping GitHub.com for some reason" -C 14,15
@@ -1761,8 +1762,6 @@ Function ShowHelp {
 	DisplayOut '  -sss     ','        Show Skipped Services' -C 14,15
 	DisplayOut "`n--Misc Switches--" -C 2
 	DisplayOut '  -dry     ','        Runs the Script and Shows what services will be changed' -C 14,15
-	DisplayOut '  -css     ','        Change State of Service' -C 14,15
-	DisplayOut '  -sds     ','        Stop Disabled Service' -C 14,15
 	DisplayOut "`n--Dev Switches--" -C 2
 	DisplayOut '  -devl    ','        Makes a log file with various Diagnostic information, Nothing is Changed ' -C 14,15
 	DisplayOut '  -diag    ','        Shows diagnostic information, Stops ','-auto' -C 14,15,14
@@ -1903,15 +1902,17 @@ $ScriptLog = 0
 # 0 = Don't make a log file
 # 1 = Make a log file
 # Will be script's directory named `Script.log` (default)
+# Change name on next line
 
 $LogName = "Script.log"
-# Name of log file
+# Name of log file (if ScriptLog is set to 1)
 
 $LogBeforeAfter = 0
 # 0 = Don't make a file of all the services before and after the script
 # 1 = Make a file of all the services before and after the script
 # Will be in script's directory file named
-#    '(ComputerName)-Services-Before.log' and '(ComputerName)-Services-Services-After.log'
+#	'(ComputerName)-Services-Before.log'
+#	'(ComputerName)-Services-After.log'
 
 $BackupServiceConfig = 0
 # 0 = Don't backup Your Current Service Configuration before services are changes
