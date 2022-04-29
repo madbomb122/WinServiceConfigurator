@@ -1,4 +1,10 @@
 -----------------------------------------------------------------------------------
+1.0.0 (04-29-2022)
+
+Minor Improvements
+Service choice list now wont show file extension
+If invalid or no service config selected the service list tab will be hidden
+-----------------------------------------------------------------------------------
 0.9.1 (04-20-2022)
 
 Some improvements
