@@ -7,7 +7,7 @@ This script allows you to change service configuration, Manually or from a file.
 To Download go to -> [Win Service Configurator Script -Release](https://github.com/madbomb122/WinServiceConfigurator/releases)  
 
 **Current Version**   
-**Script:** `0.9.1` (APril 20, 2022)   
+**Script:** `1.0.0` (APril 29, 2022)   
 
 
 ## Contents
@@ -106,6 +106,7 @@ Switch Examples:
 
 **Q:** Are you going to add more Service Configurations?   
 **A:** No, but I created a Dropbox folder for people to add/download there own service config files [Here](https://www.dropbox.com/scl/fo/yh96ixe0ophoszppou8fa/h?dl=0&rlkey=ahkqqdbtckbjb77xwlxs4ge6q)   
+**Note** If you know a better place than dropbox let me know   
 
 **Q:** *BLAH* isn't working after I used your script.  
 **A:** Check over what services were changed and make sure it isn't tied to your issue.   
