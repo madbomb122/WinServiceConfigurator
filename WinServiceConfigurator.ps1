@@ -6,7 +6,7 @@
 $MySite = 'https://GitHub.com/madbomb122/WinServiceConfigurator'
 #
 $Script_Version = '1.0.0'
-$Script_Date = 'Apr-29-2022'
+$Script_Date = 'May-02-2022'
 $Release_Type = 'Stable'
 ##########
 
@@ -54,7 +54,6 @@ $Copyright = 'The MIT License (MIT) + an added Condition (Keep Donate Links)
 .Prerequisite to run script
 	System: Windows 7+
 	Edition: Any
-	Min Build: None
 	Files: This script
 
 .DESCRIPTION
@@ -92,13 +91,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.p
   -usc             Checks for Update to Script file before running
   -sic             Skips Internet Check, if you can't ping GitHub.com for some reason
 
---Log Switches--
+--Backup/Log Switches--
+  -bsc             Backup Current Service Configuration as csv File
   -log             Makes a log file using default name Script.log
   -log File.log    Makes a log file named File.log
   -baf             Log File of Services Configuration Before and After the script
-
---Backup Service Configuration--
-  -bsc             Backup Current Service Configuration, csv File
 
 --Display Switches--
   -sas             Show Already Set Services
@@ -263,14 +260,17 @@ Function AutoDelaySet([String]$Srv,[Int]$EnDi){ Set-ItemProperty -Path "HKLM:\Sy
 
 Function GetCurrServices{
 	$Script:CurrServices = Get-CimInstance Win32_service | Foreach-Object{
-		[PSCustomObject]@{
-			ServiceName = $_.Name
-			Status = $_.State
-			StartType = $_.StartMode
-			DisplayName = $_.DisplayName
-			PathName = $_.PathName
-			Description = $_.Description
-			AutoDelay = AutoDelayTest $_.Name
+		$TMPName = $_.Name
+		If($TMPName -NotIn $Skip_Services) {
+			[PSCustomObject]@{
+				ServiceName = $TMPName
+				Status = $_.State
+				StartType = $_.StartMode
+				DisplayName = $_.DisplayName
+				PathName = $_.PathName
+				Description = $_.Description
+				AutoDelay = AutoDelayTest $_.Name
+			}
 		}
 	}
 }
@@ -1055,6 +1055,7 @@ Function GuiStart {
 
 Function RunScriptFun {
 	SaveSetting
+	If(!$GeneratedServices){ GenerateServices }
 	$Script:RunScript = 1
 	$Script:Service_Select = $WPF_ServiceConfig.SelectedIndex + 1
 	If($Service_Select -eq $SFCount) {
@@ -1185,6 +1186,7 @@ Function GenerateServices {
 	}
 
 	$WPF_dataGrid.ItemsSource = $DataGridListCust
+	$Script:GeneratedServices = $True
 	$DGUpdate = $True
 }
 
@@ -1353,16 +1355,16 @@ Function Save_Service([String]$SavePath) {
 			[PSCustomObject] @{ ServiceName = $ServiceName ;StartType = $STF ;Status = $_.SrvState }
 		}
 	} Else {
-		$SavePath = $FileBase + $Env:computername + '-Service-Backup.csv'
+		$SavePathFolder = $FileBase + 'Backup\'
+		If(!(Test-Path -LiteralPath $SavePathFolder)){ New-Item -Path $SavePathFolder -ItemType Directory }
+		$SavePath = $SavePathFolder + $Env:computername + '-Service-Backup.csv'
 		$SaveService = $AllService.ForEach{
-			$ServiceName = $_.Name
-			If($Skip_Services -NotContains $ServiceName) {
-				$tmp = $_.StartType
-				[Int]$StartType = $ServicesTypeFull.IndexOf($tmp)
-				If($StartType -eq 3 -and $_.AutoDelay -ge 1){ [Int]$StartType = 4 }
-				If($ServiceName -Like "*$ServiceEnd"){ $ServiceName = $ServiceName -Replace '_.+','_?????' }
-				[PSCustomObject] @{ ServiceName = $ServiceName ;StartType = $StartType ;Status = $_.Status }
-			}
+			$ServiceName = $_.ServiceName
+			#$tmp = $_.StartType
+			[Int]$StartType = $ServicesTypeFull.IndexOf($_.StartType)
+			If($StartType -eq 3 -and $_.AutoDelay -ge 1){ [Int]$StartType = 4 }
+			If($ServiceName -Like "*$ServiceEnd"){ $ServiceName = $ServiceName -Replace '_.+','_?????' }
+			[PSCustomObject] @{ ServiceName = $ServiceName ;StartType = $StartType ;Status = $_.Status }
 		}
 	}
 	$SaveService | Export-Csv -LiteralPath $SavePath -Encoding Unicode -Force -Delimiter ','
@@ -1750,12 +1752,11 @@ Function ShowHelp {
 	DisplayOut "`n--Update Switches--" -C 2
 	DisplayOut '  -usc     ','        Checks for Update to Script file before running' -C 14,15
 	DisplayOut '  -sic     ',"        Skips Internet Check, if you can't ping GitHub.com for some reason" -C 14,15
-	DisplayOut "`n--Log Switches--" -C 2
+	DisplayOut "`n--Backup/Log Switches--" -C 2
+	DisplayOut '  -bsc    ','         Backup Current Service Configuration as Csv File' -C 14,15
 	DisplayOut '  -log     ','        Makes a log file named using default name ','Script.log' -C 14,15,11
 	DisplayOut '  -log ','File.log ',' Makes a log file named ','File.log' -C 14,11,15,11
 	DisplayOut '  -baf     ','        Log File of Services Configuration Before and After the script' -C 14,15
-	DisplayOut "`n--Backup Service Configuration--" -C 2
-	DisplayOut '  -bsc    ','         Backup Current Service Configuration, As Csv File' -C 14,15
 	DisplayOut "`n--Display Switches--" -C 2
 	DisplayOut '  -sas     ','        Show Already Set Services' -C 14,15
 	DisplayOut '  -snis    ','        Show Not Installed Services' -C 14,15
@@ -1817,7 +1818,8 @@ Function StartScript {
 	'UsoSvc'
 	'WdNisSvc',
 	'WinDefend',
-	'xbgm')
+	'xbgm',
+	'uhssvc')
 
 	If($Diagnostic -In 1,2){ $Script:Automated = 0 }
 	If($Diagnostic -eq 2) {
