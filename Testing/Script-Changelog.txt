@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------------
-1.0.1 (05-02-2022)
+1.1.0 (05-02-2022)
 
 Fixed bug if you didnt click service list tab before running, no services were changed
 Fixed bug with backup of services didnt add service name in file
