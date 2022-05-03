@@ -21,9 +21,7 @@ To Download go to -> [Win Service Configurator Script -Release](https://github.c
 
 ## Description
 This script allows you to change service configuration, Manually or from a file. You can also Save or Load configurations.   
-Black Viper's Service Configurations from http://www.blackviper.com/ (not the downloaded csv files from the site)   
-
-PS. Don't forget to check out my other Repo [https://github.com/madbomb122/Win10Script](https://github.com/madbomb122/Win10Script)    
+Black Viper's Service Configurations from http://www.blackviper.com/ (not the downloaded csv files from the site)    
 
 ## Requirements   
 Windows 7 to Windows 11   
