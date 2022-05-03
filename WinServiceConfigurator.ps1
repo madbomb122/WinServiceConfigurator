@@ -5,7 +5,7 @@
 #  Author: Madbomb122
 $MySite = 'https://GitHub.com/madbomb122/WinServiceConfigurator'
 #
-$Script_Version = '1.0.0'
+$Script_Version = '1.1.0'
 $Script_Date = 'May-02-2022'
 $Release_Type = 'Stable'
 ##########
