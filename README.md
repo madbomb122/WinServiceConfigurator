@@ -7,7 +7,7 @@ This script allows you to change service configuration, Manually or from a file.
 To Download go to -> [Win Service Configurator Script -Release](https://github.com/madbomb122/WinServiceConfigurator/releases)  
 
 **Current Version**   
-**Script:** `1.0.0` (APril 29, 2022)   
+**Script:** `1.0.1` (May 02, 2022)   
 
 
 ## Contents
@@ -68,7 +68,7 @@ Use one of the following Methods you can
 | -log           | Makes a log file using default name `Script.log` (default)                     | Logs Notices, Errors, & Services changed                |
 | -log File.log  | Makes a log file named File.log                                                | Logs Notices, Errors, & Services changed                |
 | -baf           | File of all the services before and after the script                           | `Services-Before.log` and `Services-After.log`          |
-| -bscc          | Backup Current Service Configuration (CSV file)                                | Filename will be `COMPUTERNAME-Service-Backup.csv`      |
+| -bsc           | Backup Current Service Configuration (CSV file)                                | Filename will be `COMPUTERNAME-Service-Backup.csv`      |
 | -sas           | Show Already Set Services                                                      |                                                         |
 | -snis          | Shows NOT Installed Services                                                   |                                                         |
 | -sss           | Show Skipped Services                                                          |                                                         |
