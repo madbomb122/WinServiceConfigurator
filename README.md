@@ -59,7 +59,7 @@ Use one of the following Methods you can
 | :------------- | :------------------------------------------------------------------------------| :-------------------------------------------------------|
 | -atos          | Accepts the ToS                                                                |                                                         |
 | -auto          | Runs the script to be Automated.. Closes on User input, Errors, End of Script) | Implies `-atos`                                         |
-| -lcsc File.csv | Loads Custom Service Configuration                                             | `File.csv` Name of backup/custom file, Implies `-secp -sbc`   |
+| -lcsc File.csv | Loads Custom Service Configuration                                             | `File.csv` Name of backup/custom file                   |
 | -sxb           | Skips Change to All Xbox Services                                              |                                                         |
 | -usc           | Checks for Update to Script file before running                                | Auto downloads and runs if found                        |
 | -sic           | Skips Internet Check (If checking for update)                                  | Tests by pinging GitHub.com                             |
