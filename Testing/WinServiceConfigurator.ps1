@@ -5,8 +5,8 @@
 #  Author: Madbomb122
 $MySite = 'https://GitHub.com/madbomb122/WinServiceConfigurator'
 #
-[Version]$Script_Version = '1.1.1'
-$Script_Date = 'Aug-14-2022'
+[Version]$Script_Version = '1.2.0'
+$Script_Date = 'Oct-30-2022'
 #$Release_Type = 'Stable'
 ##########
 
@@ -126,18 +126,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File WinServiceConfigurator.p
 # 10 = 10.0.19044
 # 11 = 10.0.22000
 $WindowVersionFull = [Environment]::OSVersion.Version
-If(!($WindowVersionFull.Major -eq 10 -or ($WindowVersionFull.Major -ne 6 -and $WindowVersionFull.Minor -In 1..3))) {
+If(($WindowVersionFull.Major -le 6 -and $WindowVersionFull.Minor -le 0) -or $WindowVersionFull -eq $Null) {
 	Write-Host 'Sorry, this Script ONLY supports Windows 7 and up' -ForegroundColor 'cyan' -BackgroundColor 'black'
 	If($Automated -ne 1){ Read-Host -Prompt "`nPress Any key to Close..." } ;Exit
 }
-
-If($Release_Type -eq 'Stable'){ $ErrorActionPreference = 'SilentlyContinue' } Else{ $Release_Type = 'Testing' }
 
 $PassedArg = $args
 
 If(!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
 	Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" $PassedArg" -Verb RunAs ;Exit
 }
+
+If($Release_Type -eq 'Stable'){ $ErrorActionPreference = 'SilentlyContinue' } Else{ $Release_Type = 'Testing' }
 
 $WindowVersion = If($WindowVersionFull.Major -eq 10) {
 	If($WindowVersionFull.Build -ge 22000){ 11 }Else{ 10 }
@@ -155,6 +155,7 @@ $WorkServer = If($CimOS.ProductType -eq 1) {
 	'Unknown'
 }
 
+#May not Apply OS older than 10
 $WinSku = $CimOS.OperatingSystemSKU
 $WinSkuList = @(48,49,98,100,101)
 # 48 = Pro, 49 = Pro N
@@ -187,7 +188,8 @@ $colors = @(
 'red',        #13
 'white',      #14
 'yellow')     #15
-$ColorsGUI = $Colors[14,15,7,3,4,5,6,2,8,9,10,11,12,13,0,1]
+$ColorsGUI = $Colors[14,15,7+@(3..6)+2+@(8..13)+0,1]
+#$ColorsGUI = $Colors[14,15,7,3,4,5,6,2,8,9,10,11,12,13,0,1]
 
 $ServicesTypeFull = @(
 'Skip',    #0 -Skip/Not Installed
@@ -195,7 +197,8 @@ $ServicesTypeFull = @(
 'Manual',  #2
 'Auto',    #3
 'Auto (Delayed)') #4
-$ServicesTypeList = $ServicesTypeFull[0,1,2,3,3]
+$ServicesTypeList = $ServicesTypeFull[@(0..3) + 3]
+#$ServicesTypeList = $ServicesTypeFull[0,1,2,3,3]
 
 $SrvStateList = @('Running','Stopped')
 $XboxServiceArr = @('XblAuthManager','XblGameSave','XboxNetApiSvc','XboxGipSvc','xbgm')
@@ -942,7 +945,7 @@ Function GuiStart {
 	$WPF_FilterTxt.Add_TextChanged{ DGFilter }
 	$WPF_FilterType.Add_DropDownClosed{ DGFilter }
 	$WPF_LoadServicesButton.Add_Click{ GenerateServices }
-	$WPF_UpdateScriptButton.Add_Click{ UpdateCheckNow }
+	$WPF_UpdateScriptButton.Add_Click{ UpdateCheckNow -Srp }
 	$WPF_ShowAllServices_CB.Add_Click{ $ShowAllServices = If($WPF_ShowAllServices_CB.IsChecked){ 1 } Else{ 0 } ;GenerateServices }
 
 	$WPF_ShowDiagButton.Add_Click{
@@ -1235,16 +1238,17 @@ Function UpdateCheck {
 	)
 
 	Try {
-		$CSV_Ver = Invoke-WebRequest $Version_Url -ErrorAction Stop | ConvertFrom-Csv
+		$CSV_Ver = Invoke-WebRequest $Version_Url -UseBasicParsing -ErrorAction Stop | ConvertFrom-CSV
+		$CSV_Down = $True
 		$Message = ''
 	} Catch {
-		$CSV_Ver = $False
+		$CSV_Down = $False
 		$Message = 'Error: Unable to check for update, try again later.'
 		If($ScriptLog -eq 1){ Write-Output "$(GetTime): $Message" | Out-File -LiteralPath $LogFile -Encoding Unicode -Append }
 	}
 
-	If(($SrpCheck -or $ScriptVerCheck -eq 1) -and !$CSV_Ver) {
-		$CSVLine,$RT = If($Release_Type -eq 'Stable'){ 0,'' } Else{ 2,'Testing/' }
+	If(($SrpCheck -or $ScriptVerCheck -eq 1) -and $CSV_Down) {
+		$CSVLine,$RT = If($Release_Type -eq 'Stable'){ 0,'' } Else{ 1,'Testing/' }
 		[Version]$WebScriptVer = $CSV_Ver[$CSVLine].Version + "." + $CSV_Ver[$CSVLine].MinorVersion
 		If($WebScriptVer -gt $Script_Version) {
 			$Choice = 'Yes'
@@ -1344,7 +1348,7 @@ Function Save_Service([String]$SavePath) {
 		If(!(Test-Path -LiteralPath $SavePathFolder)){ New-Item -Path $SavePathFolder -ItemType Directory }
 		$DateRun = Get-Date -Format "MM-dd-yyyy HH;mm"
 		$SavePath = $SavePathFolder + $Env:computername + "-Service-Backup ($DateRun).csv"
-		$SaveService = $AllService.ForEach{
+		$SaveService = $CurrServices.ForEach{
 			$ServiceName = $_.ServiceName
 			[Int]$StartType = $ServicesTypeFull.IndexOf($_.StartType)
 			If($StartType -eq 3 -and $_.AutoDelay -ge 1){ [Int]$StartType = 4 }
