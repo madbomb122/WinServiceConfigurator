@@ -1,4 +1,10 @@
 -----------------------------------------------------------------------------------
+1.2.0 (10-30-2022)
+
+Fixed bug with checking for updates
+Fixed backup up services setting auto delay as auto
+
+-----------------------------------------------------------------------------------
 1.1.1 (08-14-2022)
 
 Improved performance of script
